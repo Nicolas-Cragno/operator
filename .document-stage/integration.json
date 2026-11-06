@@ -1,0 +1,54 @@
+{
+  "manifestHash": "026ab009a052d98db18f5e9bb8ebf7fd14c09bf8d7c0b7e5c9a5d6e95ae1484c",
+  "files": {
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\cantapp-back\\functions\\services\\operator-operations.contract.js": {
+      "before": "e01aab7c0f706404b7dd57a9f8f68527d388ac8537c9afd0d918a6b706b7acdc",
+      "applied": "d0fedef771dc0e8266cd2db3c2ba5f16a71b9ae8ba97677124df7c148fe4b615"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\cantapp-back\\functions\\services\\operator-write.service.js": {
+      "before": "ba16caf3f9ea5365b71fea2f926ab4f0f26a58269b4ea4afafff011d9f4ae9da",
+      "applied": "483dec88e804bb7ed6f7e1efd075dd1df1ebc5bd9e4cfea67176db9d72fabc5a"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\cantapp-back\\functions\\services\\eventos.service.js": {
+      "before": "1eb96af0224d2376477d5f2bd9d8df68b12b7f04238ff1880949a9e463864011",
+      "applied": "abe560e2a840fd1f4a2b3af74ac7758408681c47c94cbf904d1b80351cdf423d"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\cantapp-back\\functions\\controllers\\eventos.controller.js": {
+      "before": "7ae3f06cf717bb239fd1d912b18f4015004554f8ed57a549e944dca830a6e3f3",
+      "applied": "f157381727b6e01ef411d5c814b82fd9b138ea493847726d36a8d4a1111bb7b7"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\cantapp-back\\functions\\services\\services.js": {
+      "before": "0f5ef2fe9ea728cca132e6241a5762c1334d43a815301f183c41b2e89e10a892",
+      "applied": "1fac9124d82e29996b16894708be3275668cedec7022057c976d62de31ba8688"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\cantapp-back\\functions\\controllers\\consultas.controller.js": {
+      "before": "cb35a9d2879623e1b832136de5b7c29d4a59e7187fe500bc6e54d97ba9dc2f1a",
+      "applied": "33afe2b612e911f8ec9f8409e455c90ccf96aae832c7621c0a8f08d25dc9d7da"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\cantapp-back\\functions\\services\\relaciones.service.js": {
+      "before": "34fd1e6dc345d26247ca131402975c1ea74e13ff0f538b0748caa40f7f18adf8",
+      "applied": "913a282546e173f9e7ea0a47b42fbd6eadd805ec2c506c0f7972172fa7f9c273"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\cantapp-back\\functions\\services\\stock.service.js": {
+      "before": "44f7d4749fbf853175083b00b37970ab5e5f4dd1c20a0f7bb752a71d427c870f",
+      "applied": "b8227165b08b2569d4fdf545100eb5cf3a7e43359504115a17d0f88e87e3b7b1"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\Cantapp\\cantapp-components\\src\\data\\administrationFields.js": {
+      "before": "88032351db23c30c15e8302a3aaab1f5293c42eac4213561eae75000d82e1052",
+      "applied": "998998eb13f65cb6eff2aae37e840432a8eb3432198fbe2e31d414298d9cf051"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\Cantapp\\cantapp-components\\src\\index.js": {
+      "before": "39c1a5c53c58344e84d3431d9a3064ea7a1f52781d10987b5a6731b4b4beead8",
+      "applied": "ccc0cd9d787d41a8be4fcdb4c109c571107f3ce3c905b151410c5d84a9c82aaa"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\Cantapp\\cantapp-components\\src\\components\\Form\\articleLines.jsx": {
+      "before": "b47d4e40b83efa544df61d951705004198fe7201fd0dd3ebcc61a905321204cc",
+      "applied": "748eb0aa8be1d79393b20467e121c0a3d7eedb8ca06c57deb260f52d4597b800"
+    },
+    "C:\\Users\\NIcolas Cragno\\Desktop\\aplicaciones\\Cantapp\\cantapp-components\\src\\components\\Form\\formStandard.jsx": {
+      "before": "defb06ada98cbd26d7c42aafbec45bc61deab3ddc6156391d893cb47da2a5255",
+      "applied": "52d61c0bb97afa4b407ec7356b28f9e754a345d5b35e54e8b916b7a63ed0686f"
+    }
+  },
+  "updatedAt": "2026-11-03T18:26:31.014466+00:00"
+}

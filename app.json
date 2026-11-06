@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Cantapp Base",
+    "slug": "cantapp-base",
+    "scheme": "cantappbase",
+    "version": "1.0.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir que Operator use la cámara para escanear recursos.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
+    ],
+    "web": {
+      "bundler": "metro"
+    },
+    "android": {
+      "package": "com.cantapp.base"
+    }
+  }
+}
