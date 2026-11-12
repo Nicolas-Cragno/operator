@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useRouter, usePathname } from "expo-router";
 import { Alert, FloatButton, LoadingState, Modal, QROptionsModal, QRScanner, useCantappTheme } from "cantapp-components";
 import { useApp } from "../contexts/AppContext";
@@ -57,7 +59,9 @@ export default function AppShell({ children }) {
   }
   const navigate = (route) => { markActivity(); router.push(route); };
   const link = (label, icon, route, active = false, inset = false) => <Pressable key={route} onPress={() => navigate(route)} style={{ paddingVertical: 12, paddingHorizontal: inset ? 24 : 12, backgroundColor: active ? t.colorD : "transparent", borderRadius: 4, flexDirection: "row", gap: 12, alignItems: "center" }}><ModuleIcon name={icon} color={active ? t.colorA : t.text} size={19}/><Text style={{ color: t.text, fontWeight: active ? "700" : "400", flexShrink: 1 }}>{label}</Text></Pressable>;
-  return <View style={{ flex: 1, flexDirection: "row", backgroundColor: t.background }}>
+  return <SafeAreaView edges={Platform.OS === "web" ? [] : ["top"]} style={{ flex: 1, backgroundColor: "#0d1f7f" }}>
+    {Platform.OS !== "web" && <StatusBar style="light" />}
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: t.background }}>
     {desktop && <View style={{ width: 240, backgroundColor: "#ffffff", borderRightWidth: 1, borderColor: t.colorE, padding: 14 }}>
       <Pressable onPress={() => navigate("/")} style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 25 }}><AppLogo uri={app?.logo} name={app?.nombre} color={t.text} size={40}/><Text style={{ color: t.text, fontWeight: "800", fontSize: 18, flex: 1 }}>{app?.nombre?.toUpperCase()}</Text></Pressable>
       <ScrollView>{link("Inicio", "house", "/", pathname === "/")}{modules.filter((m) => m.showIn?.includes("sidebar")).map((m) => <View key={m.id}>{link(m.label, m.icon, m.route, pathname.startsWith(m.route))}{m.children?.length && pathname.startsWith(m.route) ? m.children.map((child) => <Pressable key={child.id} onPress={() => navigate(child.route)} style={{ paddingVertical: 9, paddingLeft: 42 }}><Text style={{ color: pathname === child.route ? t.colorA : t.text }}>{child.label}</Text></Pressable>) : null}</View>)}</ScrollView>
@@ -90,5 +94,5 @@ export default function AppShell({ children }) {
       title={`Portería · ${qr.resource.id}`} onClose={closeQR}
       onSaved={(record, warning) => setQR({ screen: "saved", record, warning })} />}
     {qr?.screen === "saved" && <RecordBrowser entity="eventos" record={qr.record} warning={qr.warning} onClose={closeQR} />}
-  </View>;
+  </View></SafeAreaView>;
 }

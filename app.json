@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Cantapp Base",
-    "slug": "cantapp-base",
-    "scheme": "cantappbase",
+    "name": "Cantapp Operator",
+    "slug": "cantapp-operator",
+    "scheme": "cantappoperator",
     "version": "1.0.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -21,7 +21,17 @@
       "bundler": "metro"
     },
     "android": {
-      "package": "com.cantapp.base"
-    }
+      "package": "com.cantapp.operator",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e756884d-236b-4247-9f39-8cb452088093"
+      }
+    },
+    "owner": "gebbdev"
   }
 }
