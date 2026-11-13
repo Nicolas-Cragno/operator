@@ -5,7 +5,7 @@ import { canEditRecord } from "../config/operations";
 import { clearPendingRecord, formOptions, initialFormData, makePendingRecord, pendingMatches, porteriaFields, readEditableRecord, readPendingRecord, recordPayload, rememberPendingRecord, saveRecord } from "../services/record.service";
 const LINK_CONFIRM_FIELDS = [{ key: "justificacion", label: "Justificación del movimiento adicional", type: "textarea", required: true, validate: value => String(value || "").trim().length < 10 || String(value).length > 1000 ? "Ingresá entre 10 y 1000 caracteres" : "" }];
 
-export default function RecordEditor({ entry, policy, record, initialValues, title, onClose, onSaved }) {
+export default function RecordEditor({ entry, policy, record, initialValues, initialWarning, title, onClose, onSaved }) {
   const [state, setState] = useState({ loading: true });
   const [saving, setSaving] = useState(false);
   const [inventory, setInventory] = useState(false);
@@ -179,6 +179,7 @@ export default function RecordEditor({ entry, policy, record, initialValues, tit
         <Button label="Descartar solicitud sin guardar" variant="outline" disabled={saving} onPress={discardUncommittedWarning} />
       </> : <Button label={pending.status === "confirmed" ? "Consultar registro guardado" : "Verificar la misma solicitud"} loading={saving} onPress={recover} />}
     </> : <>
+      {initialWarning && <Alert tone="warning" description={initialWarning} />}
       {recoveryError && <Alert tone="danger" title="No se pudo guardar" description={recoveryError} />}
       {type === "detalle" && <Alert title="Edición del detalle" description="Se conservan los datos operativos, recursos y fechas del registro." />}
       {policy.type === "stock" && <Alert title="Catálogo de artículos" description="Las existencias se administran mediante movimientos. Un artículo nuevo comienza con cantidad cero." />}

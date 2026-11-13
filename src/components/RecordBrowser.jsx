@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Modal, RecordDetail, RelatedRecordsTable, ReloadButton, Alert, LoadingState, Button, QRViewer } from 'cantapp-components';
 import { loadRecordDetail, loadRecordRelations, loadDepositStock } from '../services/recordDetails.service';
 import { projectDetail } from '../utils/recordDetails';
@@ -9,6 +9,7 @@ import { canEditRecord, operationPolicy } from '../config/operations';
 import { findCatalog } from '../config/catalog';
 import { useAuth } from '../contexts/AuthContext';
 import RecordEditor from './RecordEditor';
+import { shareQR, saveQR, printQR } from '../services/qrExport.service';
 
 const PAGE_SIZE = 25;
 const dateColumns = new Set(['fecha', 'fechaInicio', 'fechaFin']);
@@ -92,7 +93,10 @@ export default function RecordBrowser({ entity, record, policy, onClose, onEdit,
       />
     </> : <Alert tone="danger" title="No se pudo abrir la ficha" description={state.error} />}
     {resourceQR && <Modal visible title={`QR · ${resourceQR.identifier}`} onClose={() => setResourceQR(null)}>
-      <QRViewer value={resourceQR.value} identifier={resourceQR.identifier} />
+      <QRViewer value={resourceQR.value} identifier={resourceQR.identifier} onShare={shareQR}
+        onDownload={['android', 'web'].includes(Platform.OS) ? saveQR : undefined}
+        downloadLabel={Platform.OS === 'web' ? 'Descargar PNG' : 'Guardar PNG'}
+        onPrint={Platform.OS === 'web' ? printQR : undefined} />
     </Modal>}
   </Modal>{editor && <RecordEditor {...editor} title={relationLabels[current.entity] || current.entity} onClose={() => setEditor(null)} onSaved={(saved, message) => { setSavedWarning(message || ''); setEditor(null); updateQuery({ record: saved }); }} />}</>;
 }
