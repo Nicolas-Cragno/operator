@@ -1,5 +1,5 @@
 {
-  "name": "cantapp-base",
+  "name": "cantapp-operator",
   "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",

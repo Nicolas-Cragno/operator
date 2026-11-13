@@ -32,31 +32,33 @@ export function statistics(value, prefix = '') {
 export function projectDetail(entity, record) {
   const config = recordDetails[entity];
   if (!config) return { title: String(record.id || ''), sections: [] };
-  const sections = config.sections.map(section => ({ ...section, fields: section.fields.flatMap(field => {
-    let value = [field.key, ...field.aliases].map(key => record[key]).find(present);
-    if (field.format === 'checks') {
-      if (record.tipo !== 'SALIDA') return [];
-      value = checkTags(value, record);
-    } else if (!present(value)) return [];
-    let format = field.format;
-    if (format === 'date') value = detailDate(value);
-    else if (format === 'datetime') value = parseRecordDate(value) ? formatRecordDate(value) : '';
-    else if (format === 'tools') { value = tags(value); format = 'tags'; }
-    else if (format === 'periods') {
-      value = (Array.isArray(value) ? value : []).filter(item => item && typeof item === 'object').map(item => ({ label: `${detailDate(item.inicio)}${item.fin ? ` - ${detailDate(item.fin)}` : ''}${item.empresaAbreviatura ? ` (${item.empresaAbreviatura})` : ''}` })).filter(item => item.label.trim());
-      format = 'tags';
-    } else if (format === 'statistics') value = statistics(value);
-    else if (format === 'checks') format = 'tags';
-    else if (format === 'tags') value = tags(value);
-    else if (format === 'balances') { value = (Array.isArray(value) ? value : []).filter(item => present(item.cantidad)).map(item => ({ label: `${item.deposito}: ${Number(item.cantidad).toLocaleString('es-AR')} ${item.unidad || ''}` })); format = 'tags'; }
-    else if (format === 'satellite') { value = [{ label: value === true ? 'Satelital activo' : 'Satelital inactivo', active: value === true }]; format = 'tags'; }
-    else if (typeof value === 'number') value = value.toLocaleString('es-AR', { maximumFractionDigits: 2 });
-    else if (Array.isArray(value)) { value = tags(value); format = 'tags'; }
-    else if (!scalar(value)) return []; // Internal maps never become raw text/JSON.
-    else if (typeof value === 'boolean') value = value ? 'Sí' : 'No';
-    if (!present(value) || (Array.isArray(value) && !value.length)) return [];
-    return [{ ...field, format, value }];
-  }) })).filter(section => section.fields.length);
+  const sections = config.sections.map(section => ({
+    ...section, fields: section.fields.flatMap(field => {
+      let value = [field.key, ...field.aliases].map(key => record[key]).find(present);
+      if (field.format === 'checks') {
+        if (record.tipo !== 'SALIDA') return [];
+        value = checkTags(value, record);
+      } else if (!present(value)) return [];
+      let format = field.format;
+      if (format === 'date') value = detailDate(value);
+      else if (format === 'datetime') value = parseRecordDate(value) ? formatRecordDate(value) : '';
+      else if (format === 'tools') { value = tags(value); format = 'tags'; }
+      else if (format === 'periods') {
+        value = (Array.isArray(value) ? value : []).filter(item => item && typeof item === 'object').map(item => ({ label: `${detailDate(item.inicio)}${item.fin ? ` - ${detailDate(item.fin)}` : ''}${item.empresaAbreviatura ? ` (${item.empresaAbreviatura})` : ''}` })).filter(item => item.label.trim());
+        format = 'tags';
+      } else if (format === 'statistics') value = statistics(value);
+      else if (format === 'checks') format = 'tags';
+      else if (format === 'tags') value = tags(value);
+      else if (format === 'balances') { value = (Array.isArray(value) ? value : []).filter(item => present(item.cantidad)).map(item => ({ label: `${item.deposito}: ${Number(item.cantidad).toLocaleString('es-AR')} ${item.unidad || ''}` })); format = 'tags'; }
+      else if (format === 'satellite') { value = [{ label: value === true ? 'Satelital activo' : 'Satelital inactivo', active: value === true }]; format = 'tags'; }
+      else if (typeof value === 'number') value = value.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+      else if (Array.isArray(value)) { value = tags(value); format = 'tags'; }
+      else if (!scalar(value)) return []; // Internal maps never become raw text/JSON.
+      else if (typeof value === 'boolean') value = value ? 'Sí' : 'No';
+      if (!present(value) || (Array.isArray(value) && !value.length)) return [];
+      return [{ ...field, format, value }];
+    })
+  })).filter(section => section.fields.length);
   const statusKey = Object.hasOwn(record, 'activo') ? 'activo' : config.status;
   const active = statusKey && (!config.optionalStatus || Object.hasOwn(record, statusKey)) ? record[statusKey] === true : undefined;
   return {
