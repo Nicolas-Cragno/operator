@@ -8,7 +8,10 @@ async function apiRequest(path, { method = "GET", params = {}, data, headers = {
  const token = await user.getIdToken();
  if (auth.currentUser?.uid !== user.uid) throw new Error("La sesión cambió; volvé a abrir el formulario");
  const qs = Object.entries(params).filter(([,v]) => v !== undefined && v !== null && v !== "").map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
- const url = `${API_BASE}${path}${qs ? `?${qs}` : ""}`;
+ // These routes are mounted at the Express root, outside the base URL's /api suffix.
+ const rootRoute = /^\/catalogos(?:\/|$)/.test(path) || /^\/api\/v1\/apps\/[^/]+\/posiciones(?:\/|$)/.test(path);
+ const requestBase = rootRoute ? API_BASE.replace(/\/api$/i, "") : API_BASE;
+ const url = `${requestBase}${path}${qs ? `?${qs}` : ""}`;
  let response;
  try {
   response = await fetch(url, { method, headers: {Authorization:`Bearer ${token}`,Accept:"application/json", ...(data ? { "Content-Type": "application/json" } : {}), ...headers}, ...(data ? { body: JSON.stringify(data) } : {}) });

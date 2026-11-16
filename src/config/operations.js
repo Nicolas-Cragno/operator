@@ -9,6 +9,7 @@ export function operationUnavailableReason(user, capabilities) {
 }
 
 export function operationPolicy(group, entry, user, capabilities) {
+  if (group === "recursos" && entry.id === "depositos") return null;
   if (group === "documentos" && capabilities?.version === 1 && capabilities.operations?.documents?.version === 1 && capabilities.operations.documents.read) {
     const write = WRITE_ROLES.includes(user?.rol) && capabilities.operations.documents.enabled === true;
     return { create: write, edit: write, type: "documento", path: "/eventos", rules: capabilities.operations.rules,

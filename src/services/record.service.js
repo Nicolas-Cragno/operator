@@ -1,6 +1,7 @@
 import appConfig from "../config/app.config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { auth } from "../firebase/client";
+import { auth, firebaseApp } from "../firebase/client";
+import { collection, doc, getDocs, getDocFromServer, getFirestore } from "firebase/firestore";
 import { enrichOperationalRows } from "./catalog.service";
 import { apiGet, apiMutate, extractRows } from "./api.service";
 import { parseRecordDate, recordDay } from "../utils/formatRecord";
@@ -48,11 +49,11 @@ export async function programmedTripsForResource(resource) {
 export function porteriaFields(formulario = "movPorteria") {
   const relation = (key, source, required = false) => ({ key, relation: source, type: "searchSelect", required });
   return [
-    { key: "tipo", type: "select", required: true },
+    { key: "tipo", type: "buttons", required: true },
     relation("operador", "personas", true), relation("persona", "personas", true),
     { key: "detalle", type: "textarea" },
     ...(formulario === "movPorteria" ? [{ ...relation("tractor", "tractores", true), type: "multiSelect" },
-    { ...relation("furgon", "furgones"), type: "multiSelect" }, relation("cliente", "empresas/clientes"),
+    { ...relation("furgon", "furgones"), type: "multiSelect" }, relation("cliente", "empresas/clientes"), { ...relation("destino", "catalogos/localidades"), valueField: "key" },
     { key: "cargado", type: "switch", defaultValue: false }, { key: "chequeos", type: "multiSelect" }] : [relation("vehiculo", "vehiculos")]),
     ...(formulario === "movPorteriaProveedor" ? [relation("destino", "sectores", true), relation("empresa", "proveedores"), { key: "remito", type: "text" }] : []),
   ];
@@ -66,18 +67,80 @@ export async function readEditableRecord(policy, id) {
 
 export async function formOptions(fields, { creating = false, llaves = false } = {}) {
   const sources = [...new Set(fields.map(field => field.relation).filter(Boolean))];
-  const lists = await Promise.all(sources.map(async source => [source, extractRows(await apiGet(`/${source}`))]));
+  const lists = await Promise.all(sources.map(async source => {
+    if (source === 'puestos') {
+      const snapshot = await getDocs(collection(getFirestore(firebaseApp), 'puestos'));
+      return [source, snapshot.docs.map(row => ({ ...row.data(), id: row.id }))];
+    }
+    return [source, extractRows(await apiGet(`/${source}`))];
+  }));
   const lookup = new Map(lists);
   return Object.fromEntries(fields.filter(field => field.relation).map(field => {
-    const options = lookup.get(field.relation).filter(row => (!creating || row.estado !== false)
-      && (!llaves || field.key !== "operador" || String(row.especializacion || "").toUpperCase() === "SERENO")).map(row => ({
+    const rows = lookup.get(field.relation).filter(row => (!creating || row.estado !== false)
+      && (!llaves || field.key !== "operador" || String(row.especializacion || "").toUpperCase() === "SERENO"));
+    if (['empresas', 'empresas/clientes', 'empresas/proveedores', 'proveedores'].includes(field.relation)) {
+      rows.sort((a, b) => Number(b.tipo === 'propia') - Number(a.tipo === 'propia')
+        || String(a.nombre || a.razonSocial || a.descripcion || a.id).localeCompare(String(b.nombre || b.razonSocial || b.descripcion || b.id), 'es', { sensitivity: 'base', numeric: true }));
+    }
+    const options = rows.map(row => ({
       value: field.lowercaseValue ? String(row[field.valueField] || "").trim().toLowerCase() : String(row[field.valueField || "id"]),
       unidad: row.unidad,
-      label: field.relation === "personas" ? `${row.apellido || ""}, ${row.nombres || row.nombre || ""} (${row.id})` : `${row.nombre || row.descripcion || row.dominio || row.id}${row.nombre || row.descripcion || row.dominio ? ` (${row.id})` : ""}`,
+      ...(field.relation === 'personas' ? { area: row.area } : {}),
+      ...(['tractores', 'furgones'].includes(field.relation) ? {
+        interno: String(row.interno ?? row.id), dominio: String(row.dominio || row.patente || ''),
+        vehicleClass: /^\d+$/.test(String(row.id)) ? (Number(row.id) < 1000 ? 'normal' : 'bitren') : null,
+      } : {}),
+      ...(field.relation === 'puestos' ? {
+        especializaciones: (Array.isArray(row.especializaciones) ? row.especializaciones : []).map(item => {
+          if (typeof item === 'string' || typeof item === 'number') return { value: String(item), label: String(item) };
+          const value = item?.value ?? item?.key ?? item?.id ?? item?.descripcion;
+          return value == null ? null : { value: String(value), label: String(item.label ?? item.descripcion ?? value) };
+        }).filter(Boolean),
+      } : {}),
+      label: field.relation === "catalogos/localidades" ? `${row.nombre} - ${row.provincia}` : field.relation === "puestos" ? String(row.descripcion || row.id) : field.relation === "personas" ? `${row.apellido || ""}, ${row.nombres || row.nombre || ""} (${row.id})` : `${row.nombre || row.descripcion || row.dominio || row.id}${row.nombre || row.descripcion || row.dominio ? ` (${row.id})` : ""}`,
     }));
     if (!field.required && !["multiSelect", "articleLines"].includes(field.type)) options.unshift({ value: "", label: "Sin asignar" });
     return [field.key, options];
   }));
+}
+
+// Advisory only: one server document read, with backend save validation unchanged.
+export async function duplicateResourceIdWarning(entity, value, originalId) {
+  if (!['tractores', 'furgones', 'vehiculos'].includes(entity)) return '';
+  const id = String(value ?? '').trim();
+  if (!id || id === String(originalId ?? '').trim() || id.includes('/') || id.length > 250 || ['.', '..'].includes(id)) return '';
+  try {
+    const snapshot = await getDocFromServer(doc(getFirestore(firebaseApp), entity, id));
+    return snapshot.exists() ? 'Este ID ya existe. Us\u00e1 otro identificador.' : '';
+  } catch {
+    // A denied or unavailable read is never reported as a confirmed duplicate.
+    return '';
+  }
+}
+
+// Keep commercial numbers as values; document IDs are used only to exclude the edited record.
+export async function relatedDocumentOptions({ proveedor, tipo }, originalId) {
+  if (!proveedor || !['REMITO', 'FACTURA'].includes(tipo)) return [];
+  const options = new Map();
+  let received = 0;
+  for (let page = 1; ; page++) {
+    const body = await apiGet('/eventos/consulta', {
+      documentos: '1', tipos: tipo, campos: 'proveedor', q: String(proveedor), pagina: page, limit: 100,
+    }, { 'X-Cantapp-Operator': '1', 'X-Cantapp-App-Id': appConfig.appId });
+    if (body?.completeFilters !== true || !Number.isSafeInteger(body.total) || body.total < 0) throw new Error('No se pudo completar la consulta de documentos relacionados');
+    const rows = extractRows(body);
+    for (const row of rows) {
+      if (String(row.proveedor) !== String(proveedor) || row.tipo !== tipo || String(row.id) === String(originalId ?? '')) continue;
+      const number = row[tipo === 'REMITO' ? 'remito' : 'factura'];
+      if (number == null || String(number).trim() === '') continue;
+      const value = String(number);
+      options.set(value, { value, label: `${tipo} ${value}` });
+    }
+    received += rows.length;
+    if (received >= body.total) break;
+    if (!rows.length) throw new Error('La consulta de documentos relacionados quedó incompleta');
+  }
+  return [...options.values()].sort((a,b) => a.label.localeCompare(b.label, 'es', { numeric: true }));
 }
 
 export function initialFormData(fields, record) {
@@ -92,8 +155,8 @@ export function initialFormData(fields, record) {
     }
     else if (field.type === "multiSelect") value = (Array.isArray(value) ? value : value == null ? [] : [value]).map(String);
     else if (field.relation && value != null) value = String(value);
-    else if (field.type === "text" || field.type === "textarea") value = value == null ? "" : String(value);
-    else if (field.type === "select" && value != null) value = field.options?.find(option => String(option.value).toLowerCase() === String(value).toLowerCase())?.value ?? value;
+    else if (field.type === "text" || field.type === "textarea" || field.type === "asyncSelect") value = value == null ? "" : String(value);
+    else if (["select", "buttons"].includes(field.type) && value != null) value = field.options?.find(option => String(option.value).toLowerCase() === String(value).toLowerCase())?.value ?? value;
     return [field.key, value ?? (field.type === "number" ? "" : "")];
   }));
 }

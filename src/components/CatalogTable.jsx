@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, Text, View, useWindowDimensions } from "react-native";
 import {
   DataTable,
+  ExpandableText,
   DateRangeFilter,
   SearchInput,
   Button,
@@ -95,6 +96,8 @@ export default function CatalogTable({ entry, group }) {
   const compact = useWindowDimensions().width < 768;
   const [filtersOpen, setFiltersOpen] = useState(!compact);
   const documents = group === "documentos";
+  const porteria = group === "porteria";
+  const inlineActions = documents || porteria;
   const serverSide = !!entry.dateFilter;
   const cursorMode = entry.serverEntity === 'eventos' && entry.serverParams?.area === 'porteria';
   const theme = useCantappTheme();
@@ -350,8 +353,11 @@ export default function CatalogTable({ entry, group }) {
       label: displayLabels[key] || key,
       sortable: !documents && !cursorMode,
       type: undefined,
+      ...(group === "talleres" ? {
+        render: (value, row) => <ExpandableText key={row.id} value={value} label={displayLabels[key] || key} />,
+      } : {}),
     }));
-  }, [rows, entry, documents, cursorMode]);
+  }, [rows, entry, documents, cursorMode, group]);
 
   function toggleField(field) {
     setFields((previous) =>
@@ -372,13 +378,14 @@ export default function CatalogTable({ entry, group }) {
   }
 
   return (
-    <View style={{ flex: 1, minHeight: 0, gap: 10 }}>
+    <View style={{ flex: 1, minHeight: 0, width: porteria ? "100%" : undefined, gap: porteria ? 4 : 10 }}>
       <View
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
+          flexDirection: inlineActions && compact ? "column" : "row",
+          alignItems: inlineActions && compact ? "stretch" : "center",
+          justifyContent: inlineActions ? "flex-start" : "space-between",
+          flexWrap: inlineActions ? "wrap" : "nowrap",
+          gap: inlineActions ? 6 : 12,
         }}
       >
         <View
@@ -402,7 +409,7 @@ export default function CatalogTable({ entry, group }) {
           </Text>
           <ReloadButton loading={loading} onPress={updateRecords} />
         </View>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, ...(inlineActions ? { minWidth: 0, flexShrink: 1 } : {}) }}>
           {policy?.create &&
             entry.createActions.map((action) => (
               <Button
@@ -429,18 +436,23 @@ export default function CatalogTable({ entry, group }) {
           )}
         </View>
       </View>
+      {porteria && (
+        <Button label={filtersOpen ? 'Ocultar filtros' : 'Filtros y b\u00fasqueda'}
+          variant="ghost" style={{ alignSelf: 'flex-start' }}
+          onPress={() => setFiltersOpen(value => !value)} />
+      )}
       {filtersOpen && (
         <View
           style={{
             gap: 8,
-            padding: 12,
+            padding: porteria ? 8 : 12,
             borderWidth: 1,
             borderColor: theme.colorE,
             borderRadius: 8,
           }}
         >
           {!!unavailableReason && (
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: porteria ? 4 : 8 }}>
               <Alert
                 tone="warning"
                 title="Formularios no habilitados por el servidor"
@@ -471,7 +483,7 @@ export default function CatalogTable({ entry, group }) {
             />
           )}
 
-          <View style={{ gap: 8 }}>
+          <View style={{ gap: porteria ? 4 : 8 }}>
             <Text style={{ color: theme.text, fontWeight: "700" }}>
               Buscar por
             </Text>
@@ -568,7 +580,7 @@ export default function CatalogTable({ entry, group }) {
           )}
 
           {!!entry.filters?.length && (
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: porteria ? 4 : 8 }}>
               <Text style={{ color: theme.text, fontWeight: "700" }}>
                 Filtros rápidos
               </Text>
@@ -605,7 +617,7 @@ export default function CatalogTable({ entry, group }) {
           )}
 
           {entry.dateFilter && (
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: porteria ? 4 : 8 }}>
               <DateRangeFilter
                 compact
                 autoApply
@@ -634,12 +646,12 @@ export default function CatalogTable({ entry, group }) {
           )}
         </View>
       )}
-      <Button
+      {!porteria && <Button
         label={filtersOpen ? "Ocultar filtros" : "Filtros y búsqueda"}
         variant="ghost"
         style={{ alignSelf: "flex-start", marginTop: "-10px" }}
         onPress={() => setFiltersOpen((value) => !value)}
-      />
+      />}
 
       <DataTable
         fill

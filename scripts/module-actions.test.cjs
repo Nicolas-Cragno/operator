@@ -97,6 +97,13 @@ test('Module renders authorized create actions and opens the shared form for eve
   for (const group of ['recursos', 'porteria', 'talleres', 'asignaciones', 'documentos']) {
     for (const entry of catalog[group]) {
       if (group === 'porteria' && entry.id === 'eventos') continue;
+      if (group === 'recursos' && entry.id === 'depositos') {
+        const tree = await render(group, entry.id);
+        assert.equal(buttons(tree).some(button => ['Agregar', 'Agregar nuevo'].includes(button.props.label)), false);
+        assert.equal(tree.root.findAllByType(FormStandard).length, 0);
+        await close(tree);
+        continue;
+      }
       for (const action of entry.createActions) {
         const tree = await render(group, entry.id);
         await click(tree, entry.createActions.length === 1 ? 'Agregar' : action.label);

@@ -56,7 +56,7 @@ export const catalog = {
                 { id: "clientes", label: "Clientes", path: "/empresas/clientes" },
             ],
         }),
-        item("stock", "Stock", "/stock", {
+        item("stock", "Stock (listado de repuestos, artículos, etc)", "/stock", {
             searchFields: ["id", "descripcion", "unidad", "proveedor"],
             columns: ["id", "descripcion", "unidad", "cantidad"],
         }),

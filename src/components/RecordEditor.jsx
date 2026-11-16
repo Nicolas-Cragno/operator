@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Alert, Button, FormStandard, FormEventoPorteria, FormEventoPorteriaParticular, FormEventoPorteriaProveedor, LoadingState, Modal, ErrorState, administrationFields } from "cantapp-components";
 import { auth } from "../firebase/client";
 import { canEditRecord } from "../config/operations";
-import { clearPendingRecord, formOptions, initialFormData, makePendingRecord, pendingMatches, porteriaFields, readEditableRecord, readPendingRecord, recordPayload, rememberPendingRecord, saveRecord } from "../services/record.service";
+import { clearPendingRecord, duplicateResourceIdWarning, formOptions, initialFormData, makePendingRecord, pendingMatches, porteriaFields, readEditableRecord, readPendingRecord, recordPayload, relatedDocumentOptions, rememberPendingRecord, saveRecord } from "../services/record.service";
 const LINK_CONFIRM_FIELDS = [{ key: "justificacion", label: "Justificación del movimiento adicional", type: "textarea", required: true, validate: value => String(value || "").trim().length < 10 || String(value).length > 1000 ? "Ingresá entre 10 y 1000 caracteres" : "" }];
 
 export default function RecordEditor({ entry, policy, record, initialValues, initialWarning, title, onClose, onSaved }) {
@@ -28,6 +28,16 @@ export default function RecordEditor({ entry, policy, record, initialValues, ini
   // Required operational fields remain visible; hidden optional values never enter the patch.
   const visibleFields = useMemo(() => !entry?.formFields ? fields : fields.filter(field => field.required || entry.formFields.includes(field.key)), [fields, entry]);
 
+  const steps = useMemo(() => {
+    if (!['tallerTractor', 'tallerFurgon', 'asignacion', 'documento'].includes(type) || !visibleFields.some(field => field.type === 'articleLines')) return undefined;
+    const articleKeys = new Set(['ingresos', 'repuestos', 'descuento', '_totales']);
+    if (['tallerTractor', 'tallerFurgon'].includes(type)) articleKeys.add('deposito');
+    return [
+      { key: 'general', title: 'Datos generales', fields: visibleFields.filter(field => !articleKeys.has(field.key)) },
+      { key: 'articles', title: type.startsWith('taller') ? 'Repuestos y cantidades' : 'Artículos y cantidades', fields: visibleFields.filter(field => articleKeys.has(field.key)) },
+    ];
+  }, [type, visibleFields]);
+  const loadRelatedOptions = useCallback(params => relatedDocumentOptions(params, state.original?.id), [state.original?.id]);
   useEffect(() => {
     let active = true;
     setState({ loading: true });
@@ -50,10 +60,19 @@ export default function RecordEditor({ entry, policy, record, initialValues, ini
         const initialFields = initialType === "porteria" ? porteriaFields(formulario) : administrationFields(initialType, { editing: !!record, inventory: initialInventory, rules: policy.rules, ...documentOptions });
         const optionFields = initialType === "porteria" ? initialFields : initialType === "llaves" ? administrationFields("llaves", { inventory: true }) : ["interna", "externa", "ruta"].flatMap(value => administrationFields(initialType, { editing: !!record, modality: value, rules: policy.rules, ...documentOptions }));
         const options = await formOptions([...new Map(optionFields.map(field => [field.key, field])).values()], { creating: !record, llaves: initialType === "llaves" });
+        const initial = initialFormData(initialFields, original || initialValues);
+        if (initialType === 'porteria' && formulario === 'movPorteria' && initial.destino
+          && !options.destino?.some(option => option.value === initial.destino)) {
+          options.destino = [...(options.destino || []), { value: initial.destino, label: String(initial.destino) }];
+        }
+        if (initialType === 'asignacion' && !record && !initial.area && initial.persona) {
+          const area = options.persona?.find(option => String(option.value) === String(initial.persona))?.area;
+          if (area != null) initial.area = String(area).trim().toLowerCase();
+        }
         if (active) {
           setInventory(initialInventory);
           setDocumentType(documentOptions.documentType); setMovement(documentOptions.movement);
-          setState({ original, options, initial: initialFormData(initialFields, original || initialValues), loading: false });
+          setState({ original, options, initial, loading: false });
         }
       } catch (error) { if (active) setState({ loading: false, error: error.message }); }
     }
@@ -185,7 +204,7 @@ export default function RecordEditor({ entry, policy, record, initialValues, ini
       {policy.type === "stock" && <Alert title="Catálogo de artículos" description="Las existencias se administran mediante movimientos. Un artículo nuevo comienza con cantidad cero." />}
       {!editing && ["tallerTractor", "tallerFurgon"].includes(type) && <Alert title="Consumo de repuestos" description="El evento y el consumo se confirman juntos. Cada línea se descuenta una sola vez, aunque selecciones varios vehículos. No existe distribución del consumo por vehículo." />}
       {!editing && type === "asignacion" && <Alert title="Asignación de artículos" description="Registra la entrega a la persona sin descontar existencias." />}
-      {type === "porteria" ? <PorteriaForm data={state.initial} optionsByField={state.options} loading={saving} onSubmit={submit} onCancel={onClose} /> : <FormStandard title={editing ? `Registro ${record.id}` : title} fields={visibleFields} data={state.initial} optionsByField={state.options} loading={saving} onSubmit={submit} onCancel={onClose} onValuesChange={values => { setInventory(values.tipo === "INVENTARIO"); setModality(values.modalidad || "interna"); setDocumentType(values.tipo || "REMITO"); setMovement(values.movimientoStock || ""); }} />}
+      {type === "porteria" ? <PorteriaForm data={state.initial} optionsByField={state.options} loading={saving} onSubmit={submit} onCancel={onClose} /> : <FormStandard title={editing ? `Registro ${record.id}` : title} fields={visibleFields} steps={steps} loadOptions={loadRelatedOptions} onFieldBlur={(key, value) => key === "id" ? duplicateResourceIdWarning(type, value, state.original?.id) : ""} data={state.initial} optionsByField={state.options} loading={saving} onSubmit={submit} onCancel={onClose} onValuesChange={values => { setInventory(values.tipo === "INVENTARIO"); setModality(values.modalidad || "interna"); setDocumentType(values.tipo || "REMITO"); setMovement(values.movimientoStock || ""); }} />}
     </>}
   </Modal>;
 }

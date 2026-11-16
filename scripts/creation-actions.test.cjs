@@ -32,9 +32,10 @@ test('acciones derivadas del catálogo original, agrupadas por navegación y con
   assert.deepEqual(groups.map(group => group.id), ['recursos', 'porteria', 'talleres', 'asignaciones', 'documentos']);
   for (const group of groups) {
     assert.equal(group.label, navigation.find(module => module.id === group.id).label);
-    assert.equal(group.actions.length, catalog[group.id].reduce((total, entry) => total + entry.createActions.length, 0));
+    assert.equal(group.actions.length, catalog[group.id].filter(entry => group.id !== 'recursos' || entry.id !== 'depositos').reduce((total, entry) => total + entry.createActions.length, 0));
     for (const action of group.actions) {
       assert.ok(catalog[group.id].includes(action.entry));
+      assert.ok(group.id !== 'recursos' || action.entry.id !== 'depositos');
       assert.ok(action.entry.createActions.some(original => original.initialValues === action.initialValues));
       assert.equal(action.policy.create, true);
     }
