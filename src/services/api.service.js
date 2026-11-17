@@ -8,8 +8,8 @@ async function apiRequest(path, { method = "GET", params = {}, data, headers = {
  const token = await user.getIdToken();
  if (auth.currentUser?.uid !== user.uid) throw new Error("La sesión cambió; volvé a abrir el formulario");
  const qs = Object.entries(params).filter(([,v]) => v !== undefined && v !== null && v !== "").map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
- // These routes are mounted at the Express root, outside the base URL's /api suffix.
- const rootRoute = /^\/catalogos(?:\/|$)/.test(path) || /^\/api\/v1\/apps\/[^/]+\/posiciones(?:\/|$)/.test(path);
+ // Catalog routes omit the function's /api prefix; position routes use the API base.
+ const rootRoute = /^\/catalogos(?:\/|$)/.test(path);
  const requestBase = rootRoute ? API_BASE.replace(/\/api$/i, "") : API_BASE;
  const url = `${requestBase}${path}${qs ? `?${qs}` : ""}`;
  let response;
